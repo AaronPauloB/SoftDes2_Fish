@@ -4,52 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fish Quality Classification System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-icon">🐟</div>
-            <h1>Fish Quality Classification System</h1>
-            <p>M-TAF Fish Broker | Powered by YOLOv8n</p>
-        </header>
 
-        <div class="card upload-section">
-            <h2>Upload Fish Image</h2>
-            <div class="upload-box" id="uploadBox"
-                onclick="document.getElementById('imageInput').click()">
-                <input type="file" id="imageInput" accept="image/*" hidden>
-                <div class="upload-content">
-                    <span class="upload-icon">📁</span>
-                    <p>Click to upload or drag and drop</p>
-                    <p class="hint">Supports JPG, PNG</p>
+    <div class="top-bar">
+        <div class="top-bar-inner">
+            <div class="brand">
+                <div class="brand-dot">🐟</div>
+                <div>
+                    <div class="brand-name">M-TAF Fish Broker</div>
+                    <div class="brand-tag">Quality Classification System</div>
                 </div>
             </div>
+            <div class="top-bar-right">YOLOv8n</div>
+        </div>
+    </div>
 
-            <div class="preview-section" id="previewSection"
-                style="display:none;">
+    <div class="hero">
+        <div class="hero-inner">
+            <div class="hero-label">AI-Powered Analysis</div>
+            <h1>Classify Fish<br><span>Species & Freshness</span></h1>
+            <p class="hero-sub">Upload an image to instantly detect species and assess quality</p>
+        </div>
+    </div>
+
+    <div class="curved-top"></div>
+
+    <div class="main">
+
+        <div class="panel">
+            <div class="panel-label">Step 1</div>
+            <div class="panel-title">Upload Your Fish Image</div>
+            <div class="upload-zone" id="uploadBox"
+                onclick="document.getElementById('imageInput').click()">
+                <input type="file" id="imageInput" accept="image/*" hidden>
+                <div id="uploadContent">
+                    <div class="upload-icon-wrap">📁</div>
+                    <p>Click to upload or drag &amp; drop</p>
+                    <p class="sub">Supports JPG, PNG</p>
+                </div>
+            </div>
+            <div class="preview-wrap" id="previewSection">
                 <img id="previewImage" src="" alt="Preview">
-                <button class="remove-btn"
-                    onclick="removeImage()">✕ Remove</button>
+                <button class="remove-btn" onclick="removeImage()">✕</button>
             </div>
         </div>
 
         <button class="classify-btn" id="classifyBtn"
             onclick="classifyImage()" disabled>
-            🔍 Classify Fish
+            <span>🔍</span> Classify Fish
         </button>
 
-        <div class="loading" id="loading" style="display:none;">
-            <div class="spinner"></div>
-            <p>Analyzing fish image...</p>
-            <p class="hint">Detecting species and assessing freshness</p>
+        <div class="loading-panel" id="loading">
+            <div class="pulse-ring"></div>
+            <p>Analyzing your image...</p>
+            <p class="sub">Detecting species and assessing freshness</p>
         </div>
 
-        <div class="card results-section" id="resultsSection"
-            style="display:none;">
-            <h2>Classification Results</h2>
+        <div class="results-panel" id="resultsSection">
+            <div class="panel-label" style="margin-bottom:6px;">Step 2</div>
+            <div class="panel-title" style="margin-bottom:16px;">Classification Results</div>
             <div id="resultsContainer"></div>
         </div>
+
     </div>
 
     <script>
@@ -60,6 +80,7 @@
         const resultsSection = document.getElementById('resultsSection');
         const resultsContainer = document.getElementById('resultsContainer');
         const loading = document.getElementById('loading');
+        const uploadContent = document.getElementById('uploadContent');
 
         imageInput.addEventListener('change', function () {
             const file = this.files[0];
@@ -68,7 +89,7 @@
                 reader.onload = function (e) {
                     previewImage.src = e.target.result;
                     previewSection.style.display = 'block';
-                    document.querySelector('.upload-content').style.display = 'none';
+                    uploadContent.style.display = 'none';
                     classifyBtn.disabled = false;
                     resultsSection.style.display = 'none';
                 };
@@ -79,7 +100,7 @@
         function removeImage() {
             imageInput.value = '';
             previewSection.style.display = 'none';
-            document.querySelector('.upload-content').style.display = 'flex';
+            uploadContent.style.display = 'block';
             classifyBtn.disabled = true;
             resultsSection.style.display = 'none';
         }
@@ -88,7 +109,7 @@
             const file = imageInput.files[0];
             if (!file) return;
 
-            loading.style.display = 'flex';
+            loading.style.display = 'block';
             classifyBtn.disabled = true;
             resultsSection.style.display = 'none';
 
@@ -110,18 +131,11 @@
             }
         }
 
-        function getFreshnessColor(freshness) {
-            const f = freshness.toLowerCase();
-            if (f.includes('highly')) return 'highly-fresh';
-            if (f.includes('not')) return 'not-fresh';
+        function getFreshnessClass(f) {
+            const fl = f.toLowerCase();
+            if (fl.includes('highly')) return 'highly-fresh';
+            if (fl.includes('not')) return 'not-fresh';
             return 'fresh';
-        }
-
-        function getFreshnessEmoji(freshness) {
-            const f = freshness.toLowerCase();
-            if (f.includes('highly')) return '🟢';
-            if (f.includes('not')) return '🔴';
-            return '🟡';
         }
 
         function displayResults(data) {
@@ -129,47 +143,50 @@
 
             if (!data.detections || data.detections.length === 0) {
                 resultsContainer.innerHTML = `
-                    <div class="no-detection">
-                        <p>⚠️ No fish detected in the image.</p>
-                        <p>Please try a clearer image with better lighting.</p>
+                    <div class="no-fish">
+                        <div class="no-fish-icon">🐟</div>
+                        <p>No fish detected in the image.<br>
+                        Try a clearer photo with better lighting.</p>
                     </div>`;
             } else {
-                data.detections.forEach((det, index) => {
-                    const freshnessClass = getFreshnessColor(det.freshness);
-                    const freshnessEmoji = getFreshnessEmoji(det.freshness);
+                data.detections.forEach((det, i) => {
+                    const fc = getFreshnessClass(det.freshness);
+
+                    // Strip species prefix from freshness label (e.g. "Bisugo_Fresh" → "Fresh")
+                    const freshnessLabel = det.freshness.includes('_')
+                        ? det.freshness.split('_').slice(1).join(' ')
+                        : det.freshness;
+
                     resultsContainer.innerHTML += `
-                        <div class="result-card">
-                            <div class="result-header">
-                                <span class="result-number">
-                                    Detection ${index + 1}
-                                </span>
-                                <span class="freshness-badge ${freshnessClass}">
-                                    ${freshnessEmoji} ${det.freshness}
+                        <div class="result-item">
+                            <div class="result-top">
+                                <span class="result-idx">Detection ${i + 1}</span>
+                                <span class="badge ${fc}">
+                                    <span class="badge-dot"></span>
+                                    ${freshnessLabel}
                                 </span>
                             </div>
-                            <div class="result-body">
-                                <div class="result-row">
-                                    <span class="label">🐟 Species</span>
-                                    <span class="value">${det.species}</span>
+                            <div class="result-grid">
+                                <div class="result-cell">
+                                    <div class="cell-label">Species</div>
+                                    <div class="cell-value">${det.species}</div>
                                 </div>
-                                <div class="result-row">
-                                    <span class="label">✅ Species Confidence</span>
-                                    <span class="value">
-                                        ${det.species_confidence}%
-                                    </span>
+                                <div class="result-cell">
+                                    <div class="cell-label">Species Conf.</div>
+                                    <div class="cell-value">${det.species_confidence}%</div>
                                 </div>
-                                <div class="result-row">
-                                    <span class="label">🔬 Freshness Confidence</span>
-                                    <span class="value">
-                                        ${det.freshness_confidence}%
-                                    </span>
+                                <div class="result-cell">
+                                    <div class="cell-label">Freshness Conf.</div>
+                                    <div class="cell-value">${det.freshness_confidence}%</div>
                                 </div>
                             </div>
                         </div>`;
                 });
             }
+
             resultsSection.style.display = 'block';
         }
     </script>
+
 </body>
 </html>
