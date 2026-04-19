@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fish Quality Classification System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-icon">🐟</div>
+            <h1>Fish Quality Classification System</h1>
+            <p>M-TAF Fish Broker | Powered by YOLOv8n</p>
+        </header>
+
+        <div class="card upload-section">
+            <h2>Upload Fish Image</h2>
+            <div class="upload-box" id="uploadBox"
+                onclick="document.getElementById('imageInput').click()">
+                <input type="file" id="imageInput" accept="image/*" hidden>
+                <div class="upload-content">
+                    <span class="upload-icon">📁</span>
+                    <p>Click to upload or drag and drop</p>
+                    <p class="hint">Supports JPG, PNG</p>
+                </div>
+            </div>
+
+            <div class="preview-section" id="previewSection"
+                style="display:none;">
+                <img id="previewImage" src="" alt="Preview">
+                <button class="remove-btn"
+                    onclick="removeImage()">✕ Remove</button>
+            </div>
+        </div>
+
+        <button class="classify-btn" id="classifyBtn"
+            onclick="classifyImage()" disabled>
+            🔍 Classify Fish
+        </button>
+
+        <div class="loading" id="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Analyzing fish image...</p>
+            <p class="hint">Detecting species and assessing freshness</p>
+        </div>
+
+        <div class="card results-section" id="resultsSection"
+            style="display:none;">
+            <h2>Classification Results</h2>
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const classifyBtn = document.getElementById('classifyBtn');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const loading = document.getElementById('loading');
+
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImage.src = e.target.result;
+                    previewSection.style.display = 'block';
+                    document.querySelector('.upload-content').style.display = 'none';
+                    classifyBtn.disabled = false;
+                    resultsSection.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function removeImage() {
+            imageInput.value = '';
+            previewSection.style.display = 'none';
+            document.querySelector('.upload-content').style.display = 'flex';
+            classifyBtn.disabled = true;
+            resultsSection.style.display = 'none';
+        }
+
+        async function classifyImage() {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            loading.style.display = 'flex';
+            classifyBtn.disabled = true;
+            resultsSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/classify', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                alert('Error classifying image. Please try again.');
+            } finally {
+                loading.style.display = 'none';
+                classifyBtn.disabled = false;
+            }
+        }
+
+        function getFreshnessColor(freshness) {
+            const f = freshness.toLowerCase();
+            if (f.includes('highly')) return 'highly-fresh';
+            if (f.includes('not')) return 'not-fresh';
+            return 'fresh';
+        }
+
+        function getFreshnessEmoji(freshness) {
+            const f = freshness.toLowerCase();
+            if (f.includes('highly')) return '🟢';
+            if (f.includes('not')) return '🔴';
+            return '🟡';
+        }
+
+        function displayResults(data) {
+            resultsContainer.innerHTML = '';
+
+            if (!data.detections || data.detections.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="no-detection">
+                        <p>⚠️ No fish detected in the image.</p>
+                        <p>Please try a clearer image with better lighting.</p>
+                    </div>`;
+            } else {
+                data.detections.forEach((det, index) => {
+                    const freshnessClass = getFreshnessColor(det.freshness);
+                    const freshnessEmoji = getFreshnessEmoji(det.freshness);
+                    resultsContainer.innerHTML += `
+                        <div class="result-card">
+                            <div class="result-header">
+                                <span class="result-number">
+                                    Detection ${index + 1}
+                                </span>
+                                <span class="freshness-badge ${freshnessClass}">
+                                    ${freshnessEmoji} ${det.freshness}
+                                </span>
+                            </div>
+                            <div class="result-body">
+                                <div class="result-row">
+                                    <span class="label">🐟 Species</span>
+                                    <span class="value">${det.species}</span>
+                                </div>
+                                <div class="result-row">
+                                    <span class="label">✅ Species Confidence</span>
+                                    <span class="value">
+                                        ${det.species_confidence}%
+                                    </span>
+                                </div>
+                                <div class="result-row">
+                                    <span class="label">🔬 Freshness Confidence</span>
+                                    <span class="value">
+                                        ${det.freshness_confidence}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+            }
+            resultsSection.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
